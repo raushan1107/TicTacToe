@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TicTacToe · RR Skillverse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Lilita+One&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#1b1f2e;
+  --surface:#242838;
+  --card:#2c3144;
+  --border:#3a4060;
+  --x:#f97316;
+  --o:#38bdf8;
+  --text:#f0f2ff;
+  --muted:#8891b4;
+  --accent:#f97316;
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+
+/* stars bg */
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(1px 1px at 10% 20%,rgba(255,255,255,.18) 0,transparent 100%),radial-gradient(1px 1px at 40% 60%,rgba(255,255,255,.12) 0,transparent 100%),radial-gradient(1px 1px at 70% 15%,rgba(255,255,255,.15) 0,transparent 100%),radial-gradient(1px 1px at 85% 75%,rgba(255,255,255,.1) 0,transparent 100%),radial-gradient(1.5px 1.5px at 55% 40%,rgba(255,255,255,.14) 0,transparent 100%),radial-gradient(1px 1px at 25% 85%,rgba(255,255,255,.12) 0,transparent 100%);pointer-events:none;z-index:0}
+
+/* NAV */
+nav{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);background:rgba(27,31,46,.9);backdrop-filter:blur(10px)}
+.nav-left{display:flex;align-items:center;gap:10px}
+.nav-logo{font-family:'Lilita One',cursive;font-size:20px;background:linear-gradient(135deg,var(--x),var(--o));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-sub{font-size:11px;color:var(--muted);letter-spacing:.1em;padding:2px 8px;border:1px solid var(--border);border-radius:20px}
+.nav-right{font-size:12px;color:var(--muted)}
+
+/* SETUP SCREEN */
+#setupScreen{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;gap:28px}
+.setup-title{font-family:'Lilita One',cursive;font-size:clamp(28px,6vw,42px);text-align:center;line-height:1.1}
+.setup-title span{background:linear-gradient(135deg,var(--x),var(--o));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.setup-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;width:min(100%,420px);display:flex;flex-direction:column;gap:20px}
+.setup-row{display:flex;gap:14px;flex-wrap:wrap}
+.input-group{flex:1;min-width:140px;display:flex;flex-direction:column;gap:6px}
+.input-label{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.input-label.x{color:var(--x)}
+.input-label.o{color:var(--o)}
+.player-input{background:var(--card);border:2px solid var(--border);color:var(--text);font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;padding:10px 14px;border-radius:10px;outline:none;transition:border-color .2s;width:100%}
+.player-input:focus{border-color:var(--x)}
+.player-input.o-input:focus{border-color:var(--o)}
+.btn-start{background:linear-gradient(135deg,var(--x),#fb923c);border:none;color:#fff;font-family:'Nunito',sans-serif;font-size:16px;font-weight:900;padding:14px 0;border-radius:12px;cursor:pointer;letter-spacing:.04em;transition:opacity .2s,transform .15s;width:100%}
+.btn-start:hover{opacity:.9;transform:translateY(-1px)}
+.btn-start:active{transform:translateY(0)}
+
+/* GAME SCREEN */
+#gameScreen{display:none;position:relative;z-index:1;flex:1;flex-direction:column;align-items:center;padding:20px 16px 0;gap:20px}
+#gameScreen.active{display:flex}
+
+/* PLAYER CARDS */
+.players-row{display:flex;align-items:center;justify-content:center;gap:16px;width:100%;max-width:480px}
+.player-card{flex:1;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:12px 14px;text-align:center;transition:all .25s;position:relative;overflow:hidden}
+.player-card.active-x{border-color:var(--x);box-shadow:0 0 0 1px var(--x),0 4px 24px rgba(249,115,22,.15)}
+.player-card.active-o{border-color:var(--o);box-shadow:0 0 0 1px var(--o),0 4px 24px rgba(56,189,248,.15)}
+.pc-mark{font-family:'Lilita One',cursive;font-size:28px;line-height:1}
+.pc-mark.x{color:var(--x)}
+.pc-mark.o{color:var(--o)}
+.pc-name{font-size:13px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-score{font-size:22px;font-weight:900;margin-top:4px}
+.vs-badge{font-family:'Lilita One',cursive;font-size:16px;color:var(--muted);flex-shrink:0}
+
+/* BOARD */
+.board-area{display:flex;flex-direction:column;align-items:center;gap:14px}
+.board-wrap{position:relative}
+.board{display:grid;grid-template-columns:repeat(3,1fr);width:min(75vw,320px);height:min(75vw,320px);background:var(--card);border-radius:18px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.4)}
+.cell{display:flex;align-items:center;justify-content:center;font-family:'Lilita One',cursive;font-size:clamp(32px,9vw,72px);cursor:pointer;border:1px solid var(--border);transition:background .15s;user-select:none;-webkit-user-select:none;position:relative}
+.cell:hover:not(.taken){background:rgba(255,255,255,.04)}
+.cell.x-mark{color:var(--x);text-shadow:0 0 20px rgba(249,115,22,.4)}
+.cell.o-mark{color:var(--o);text-shadow:0 0 20px rgba(56,189,248,.4)}
+.cell:nth-child(-n+3){border-top:none}
+.cell:nth-child(3n+1){border-left:none}
+.cell:nth-child(3n){border-right:none}
+.cell:nth-child(n+7){border-bottom:none}
+.cell.popped{animation:cpop .22s cubic-bezier(.3,1.7,.5,1)}
+@keyframes cpop{0%{transform:scale(.2);opacity:.3}100%{transform:scale(1);opacity:1}}
+.win-line{position:absolute;height:4px;background:linear-gradient(90deg,var(--x),var(--o));border-radius:4px;width:0;pointer-events:none;transition:width .5s cubic-bezier(.4,0,.2,1);transform-origin:left center;box-shadow:0 0 12px rgba(249,115,22,.5);z-index:5}
+
+/* STATUS */
+.game-status{font-size:14px;font-weight:700;color:var(--muted);letter-spacing:.06em;min-height:20px;text-align:center}
+.game-status.win{color:var(--x)}
+.game-status.draw{color:var(--muted)}
+
+/* RESET */
+.btn-reset{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;padding:9px 24px;border-radius:30px;cursor:pointer;letter-spacing:.06em;transition:all .2s}
+.btn-reset:hover{border-color:var(--text);color:var(--text)}
+
+/* FOOTER */
+footer{position:relative;z-index:1;margin-top:auto;padding:20px 20px 18px;border-top:1px solid var(--border);background:rgba(27,31,46,.6)}
+.footer-inner{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.footer-brand{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.footer-brand-text{font-size:12px;font-weight:800;color:var(--text)}
+.footer-brand-desc{font-size:11px;color:var(--muted)}
+.footer-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px}
+.footer-link{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-decoration:none;transition:all .2s;cursor:pointer}
+.footer-link:hover{border-color:var(--x);transform:translateY(-2px)}
+.fl-label{font-size:11px;font-weight:800;color:var(--text)}
+.fl-desc{font-size:10px;color:var(--muted)}
+.footer-copy{font-size:10px;color:var(--muted);letter-spacing:.06em;text-align:center}
+.footer-copy b{color:var(--x)}
+
+/* WIN OVERLAY */
+.overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(10,12,22,.75);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.show{opacity:1;pointer-events:all}
+.overlay-card{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:36px 28px;text-align:center;width:min(90vw,340px);position:relative;overflow:hidden;transform:scale(.9) translateY(10px);transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.overlay.show .overlay-card{transform:scale(1) translateY(0)}
+.ov-glow{position:absolute;inset:-60px;background:radial-gradient(circle at 50% 30%,rgba(249,115,22,.12),transparent 70%);pointer-events:none}
+.ov-mark{font-family:'Lilita One',cursive;font-size:72px;line-height:1;margin-bottom:8px}
+.ov-mark.x{color:var(--x);text-shadow:0 0 30px rgba(249,115,22,.5)}
+.ov-mark.o{color:var(--o);text-shadow:0 0 30px rgba(56,189,248,.5)}
+.ov-title{font-size:26px;font-weight:900;margin-bottom:4px}
+.ov-name{font-size:16px;color:var(--muted);margin-bottom:6px}
+.ov-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+.ov-btns{display:flex;flex-direction:column;gap:8px}
+.btn-again{background:linear-gradient(135deg,var(--x),#fb923c);border:none;color:#fff;font-family:'Nunito',sans-serif;font-size:15px;font-weight:900;padding:13px 0;border-radius:10px;cursor:pointer;transition:opacity .2s}
+.btn-again:hover{opacity:.88}
+.btn-new-game{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;padding:10px 0;border-radius:10px;cursor:pointer;transition:all .2s}
+.btn-new-game:hover{border-color:var(--text);color:var(--text)}
+
+/* CONFETTI */
+.confetti-piece{position:fixed;width:8px;height:8px;border-radius:2px;pointer-events:none;z-index:200;animation:confettiFall linear forwards}
+@keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+/* MOBILE */
+@media(max-width:480px){
+  nav{padding:10px 14px}
+  .setup-card{padding:20px 16px}
+  .board{width:min(88vw,300px);height:min(88vw,300px)}
+  .players-row{gap:10px}
+  footer{padding:16px 14px}
+  .footer-links{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <span class="nav-logo">RR Skillverse</span>
+    <span class="nav-sub">TicTacToe</span>
+  </div>
+  <span class="nav-right">by Raushan Ranjan · MCT</span>
+</nav>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen">
+  <div class="setup-title">Let's Play<br><span>Tic Tac Toe!</span></div>
+  <div class="setup-card">
+    <div class="setup-row">
+      <div class="input-group">
+        <label class="input-label x">Player X</label>
+        <input class="player-input" id="nameX" placeholder="Team X" maxlength="14" autocomplete="off"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label o">Player O</label>
+        <input class="player-input o-input" id="nameO" placeholder="Team O" maxlength="14" autocomplete="off"/>
+      </div>
+    </div>
+    <button class="btn-start" id="startBtn">Start Game →</button>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="gameScreen">
+  <div class="players-row">
+    <div class="player-card" id="cardX">
+      <div class="pc-mark x">X</div>
+      <div class="pc-name" id="pNameX">Team X</div>
+      <div class="pc-score" id="scoreX">0</div>
+    </div>
+    <div class="vs-badge">vs</div>
+    <div class="player-card" id="cardO">
+      <div class="pc-mark o">O</div>
+      <div class="pc-name" id="pNameO">Team O</div>
+      <div class="pc-score" id="scoreO">0</div>
+    </div>
+  </div>
+
+  <div class="board-area">
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+      <div class="win-line" id="winLine"></div>
+    </div>
+    <div class="game-status" id="gameStatus">X's turn</div>
+    <button class="btn-reset" id="resetBtn">↺ Reset Board</button>
+  </div>
+</div>
+
+<!-- WIN OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <div class="ov-glow"></div>
+    <div class="ov-mark" id="ovMark">X</div>
+    <div class="ov-title" id="ovTitle">Winner!</div>
+    <div class="ov-name" id="ovName">Team X</div>
+    <div class="ov-sub" id="ovSub">🎉 Brilliant play!</div>
+    <div class="ov-btns">
+      <button class="btn-again" id="btnAgain">Play Again</button>
+      <button class="btn-new-game" id="btnNewGame">Change Players</button>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div>
+        <div class="footer-brand-text">Raushan Ranjan · MCT</div>
+        <div class="footer-brand-desc">Azure · Power Platform · .NET · AI Trainer</div>
+      </div>
+    </div>
+    <div class="footer-links">
+      <a class="footer-link" href="https://rrskillverse.in" target="_blank">
+        <span class="fl-label">🚀 RR Skillverse</span>
+        <span class="fl-desc">Courses & Training</span>
+      </a>
+      <a class="footer-link" href="#" target="_blank">
+        <span class="fl-label">💰 FinMan AI</span>
+        <span class="fl-desc">Finance Intelligence</span>
+      </a>
+      <a class="footer-link" href="#" target="_blank">
+        <span class="fl-label">📊 SkillEdge</span>
+        <span class="fl-desc">Trainer Analytics</span>
+      </a>
+      <a class="footer-link" href="https://rrskillverse.in/blog" target="_blank">
+        <span class="fl-label">✍️ Tech Blog</span>
+        <span class="fl-desc">Azure, AI & .NET</span>
+      </a>
+      <a class="footer-link" href="#" target="_blank">
+        <span class="fl-label">🤖 BUDDY AI</span>
+        <span class="fl-desc">Personal AI Agent</span>
+      </a>
+    </div>
+    <div class="footer-copy">© 2025 <b>rrskillverse.in</b> · All rights reserved</div>
+  </div>
+</footer>
+
+<script>
+const WINS=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+let turn='X', over=false, scores={X:0,O:0};
+let names={X:'Team X',O:'Team O'};
+const cells=[];
+
+// Build board
+const boardEl=document.getElementById('board');
+for(let i=0;i<9;i++){
+  const c=document.createElement('div');
+  c.className='cell';
+  boardEl.appendChild(c);
+  cells.push(c);
+}
+
+const wl=document.getElementById('winLine');
+const statusEl=document.getElementById('gameStatus');
+const overlay=document.getElementById('overlay');
+
+// ── SETUP
+document.getElementById('startBtn').addEventListener('click',()=>{
+  const nx=document.getElementById('nameX').value.trim()||'Team X';
+  const no=document.getElementById('nameO').value.trim()||'Team O';
+  names={X:nx,O:no};
+  document.getElementById('pNameX').textContent=nx;
+  document.getElementById('pNameO').textContent=no;
+  scores={X:0,O:0};
+  document.getElementById('scoreX').textContent='0';
+  document.getElementById('scoreO').textContent='0';
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('gameScreen').classList.add('active');
+  resetBoard();
+});
+
+// allow Enter key on inputs
+['nameX','nameO'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown',e=>{
+    if(e.key==='Enter') document.getElementById('startBtn').click();
+  });
+});
+
+// ── TURN UI
+function updateTurnUI(){
+  document.getElementById('cardX').className='player-card'+(turn==='X'?' active-x':'');
+  document.getElementById('cardO').className='player-card'+(turn==='O'?' active-o':'');
+  statusEl.textContent=names[turn]+"'s turn";
+  statusEl.className='game-status';
+}
+
+// ── WIN CHECK
+function checkWin(){
+  for(const[a,b,c] of WINS){
+    if(cells[a].textContent&&cells[a].textContent===cells[b].textContent&&cells[a].textContent===cells[c].textContent)
+      return{w:cells[a].textContent,combo:[a,b,c]};
+  }
+  if(cells.every(c=>c.textContent))return{w:null};
+  return null;
+}
+
+// ── DRAW WIN LINE
+function drawWinLine(combo){
+  const br=boardEl.getBoundingClientRect();
+  const bw=boardEl.closest('.board-wrap').getBoundingClientRect();
+  const a=cells[combo[0]].getBoundingClientRect();
+  const b=cells[combo[2]].getBoundingClientRect();
+  const x1=a.left+a.width/2-bw.left, y1=a.top+a.height/2-bw.top;
+  const x2=b.left+b.width/2-bw.left, y2=b.top+b.height/2-bw.top;
+  const len=Math.sqrt((x2-x1)**2+(y2-y1)**2);
+  const ang=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
+  wl.style.left=x1+'px'; wl.style.top=(y1-2)+'px';
+  wl.style.transform=`rotate(${ang}deg)`;
+  wl.style.width=len+'px';
+}
+
+// ── CONFETTI
+function launchConfetti(){
+  const colors=['#f97316','#38bdf8','#facc15','#4ade80','#f472b6','#a78bfa'];
+  for(let i=0;i<80;i++){
+    const p=document.createElement('div');
+    p.className='confetti-piece';
+    p.style.cssText=`
+      left:${Math.random()*100}vw;
+      top:-10px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      width:${6+Math.random()*8}px;
+      height:${6+Math.random()*8}px;
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+      animation-duration:${1.8+Math.random()*2.2}s;
+      animation-delay:${Math.random()*.8}s;
+    `;
+    document.body.appendChild(p);
+    p.addEventListener('animationend',()=>p.remove());
+  }
+}
+
+// ── CELL CLICK
+cells.forEach((c,i)=>c.addEventListener('click',()=>{
+  if(over||c.textContent)return;
+  c.textContent=turn;
+  c.classList.add(turn==='X'?'x-mark':'o-mark','taken','popped');
+  setTimeout(()=>c.classList.remove('popped'),250);
+
+  const r=checkWin();
+  if(r){
+    over=true;
+    if(r.w){
+      scores[r.w]++;
+      document.getElementById('score'+r.w).textContent=scores[r.w];
+      drawWinLine(r.combo);
+      statusEl.textContent=names[r.w]+' wins! 🎉';
+      statusEl.className='game-status win';
+      // highlight winner card
+      document.getElementById('card'+r.w).className='player-card '+(r.w==='X'?'active-x':'active-o');
+      setTimeout(()=>{
+        launchConfetti();
+        const ovMark=document.getElementById('ovMark');
+        ovMark.textContent=r.w;
+        ovMark.className='ov-mark '+(r.w==='X'?'x':'o');
+        document.getElementById('ovTitle').textContent='Winner! 🏆';
+        document.getElementById('ovName').textContent=names[r.w];
+        const quips=['Brilliant play!','Unstoppable!','Too good!','Domination!','Champion!'];
+        document.getElementById('ovSub').textContent='🎉 '+quips[Math.floor(Math.random()*quips.length)];
+        overlay.classList.add('show');
+      },700);
+    }else{
+      statusEl.textContent="It's a draw!";
+      statusEl.className='game-status draw';
+      setTimeout(()=>{
+        document.getElementById('ovMark').textContent='🤝';
+        document.getElementById('ovMark').className='ov-mark';
+        document.getElementById('ovTitle').textContent="It's a Draw!";
+        document.getElementById('ovName').textContent='Both played well';
+        document.getElementById('ovSub').textContent='Try again for the win!';
+        overlay.classList.add('show');
+      },400);
+    }
+  }else{
+    turn=turn==='X'?'O':'X';
+    updateTurnUI();
+  }
+}));
+
+// ── RESET BOARD (keep scores, keep names)
+function resetBoard(){
+  cells.forEach(c=>{c.textContent='';c.className='cell';});
+  turn='X'; over=false;
+  wl.style.width='0';
+  overlay.classList.remove('show');
+  updateTurnUI();
+}
+
+// ── CHANGE PLAYERS (back to setup)
+function goSetup(){
+  overlay.classList.remove('show');
+  document.getElementById('gameScreen').classList.remove('active');
+  document.getElementById('setupScreen').style.display='flex';
+  cells.forEach(c=>{c.textContent='';c.className='cell';});
+  wl.style.width='0';
+  over=false; turn='X';
+}
+
+document.getElementById('resetBtn').addEventListener('click',resetBoard);
+document.getElementById('btnAgain').addEventListener('click',resetBoard);
+document.getElementById('btnNewGame').addEventListener('click',goSetup);
+</script>
+</body>
+</html>
